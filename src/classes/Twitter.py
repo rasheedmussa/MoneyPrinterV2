@@ -83,6 +83,8 @@ class Twitter:
         bot: webdriver.Firefox = self.browser
         verbose: bool = get_verbose()
 
+        bot.get("https://x.com/home")
+        time.sleep(3)
         bot.get("https://x.com/compose/post")
 
         post_content: str = text if text is not None else self.generate_post()
@@ -118,12 +120,18 @@ class Twitter:
             (By.XPATH, "//button[@data-testid='tweetButtonInline']"),
             (By.XPATH, "//button[@data-testid='tweetButton']"),
             (By.XPATH, "//span[text()='Post']/ancestor::button"),
+            (By.XPATH, "//div[@data-testid='tweetButtonInline']"),
+            (By.CSS_SELECTOR, "button[data-testid='tweetButtonInline']"),
+            (By.CSS_SELECTOR, "button[data-testid='tweetButton']"),
         ]
 
         for selector in post_button_selectors:
             try:
                 post_button = self.wait.until(EC.element_to_be_clickable(selector))
-                post_button.click()
+                try:
+                    post_button.click()
+                except Exception:
+                    bot.execute_script("arguments[0].click();", post_button)
                 break
             except Exception:
                 continue
@@ -204,7 +212,9 @@ class Twitter:
         """
         completion = generate_text(
             f"Generate a Twitter post about: {self.topic} in {get_twitter_language()}. "
-            "The Limit is 2 sentences. Choose a specific sub-topic of the provided topic."
+            "The Limit is 2 sentences. Choose a specific sub-topic of the provided topic. "
+            "At the end of the post, add 3-5 relevant hashtags. "
+            "Do not include a headline, title, or label. Output only the post text."
         )
 
         if get_verbose():

@@ -17,6 +17,7 @@ TWITTER_OPTIONS = [
     "Post something",
     "Show all Posts",
     "Setup CRON Job",
+    "Auto Post (every 4-6 min)",
     "Quit"
 ]
 

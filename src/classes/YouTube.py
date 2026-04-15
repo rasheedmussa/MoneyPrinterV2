@@ -318,7 +318,7 @@ class YouTube:
 
     def generate_image_nanobanana2(self, prompt: str) -> str:
         """
-        Generates an AI Image using Nano Banana 2 API (Gemini image API).
+        Generates an AI Image using HuggingFace Inference API (FLUX.1-schnell, free).
 
         Args:
             prompt (str): Prompt for image generation
@@ -326,55 +326,32 @@ class YouTube:
         Returns:
             path (str): The path to the generated image.
         """
-        print(f"Generating Image using Nano Banana 2 API: {prompt}")
-
-        api_key = get_nanobanana2_api_key()
-        if not api_key:
-            error("nanobanana2_api_key is not configured.")
-            return None
-
-        base_url = get_nanobanana2_api_base_url().rstrip("/")
-        model = get_nanobanana2_model()
-        aspect_ratio = get_nanobanana2_aspect_ratio()
-
-        endpoint = f"{base_url}/models/{model}:generateContent"
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseModalities": ["IMAGE"],
-                "imageConfig": {"aspectRatio": aspect_ratio},
-            },
-        }
+        print(f"Generating Image using HuggingFace: {prompt}")
 
         try:
+            url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+            headers = {"Content-Type": "application/json"}
+            hf_token = os.environ.get("HF_TOKEN", "")
+            if hf_token:
+                headers["Authorization"] = f"Bearer {hf_token}"
+
             response = requests.post(
-                endpoint,
-                headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-                json=payload,
-                timeout=300,
+                url,
+                headers=headers,
+                json={"inputs": prompt},
+                timeout=120,
             )
             response.raise_for_status()
-            body = response.json()
 
-            candidates = body.get("candidates", [])
-            for candidate in candidates:
-                content = candidate.get("content", {})
-                for part in content.get("parts", []):
-                    inline_data = part.get("inlineData") or part.get("inline_data")
-                    if not inline_data:
-                        continue
-                    data = inline_data.get("data")
-                    mime_type = inline_data.get("mimeType") or inline_data.get("mime_type", "")
-                    if data and str(mime_type).startswith("image/"):
-                        image_bytes = base64.b64decode(data)
-                        return self._persist_image(image_bytes, "Nano Banana 2 API")
+            if len(response.content) > 1000:
+                return self._persist_image(response.content, "HuggingFace FLUX")
 
             if get_verbose():
-                warning(f"Nano Banana 2 did not return an image payload. Response: {body}")
+                warning(f"HuggingFace did not return an image.")
             return None
         except Exception as e:
             if get_verbose():
-                warning(f"Failed to generate image with Nano Banana 2 API: {str(e)}")
+                warning(f"Failed to generate image with HuggingFace: {str(e)}")
             return None
 
     def generate_image(self, prompt: str) -> str:

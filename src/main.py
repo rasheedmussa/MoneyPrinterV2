@@ -1,5 +1,7 @@
 import schedule
 import subprocess
+import random
+import time
 
 from art import *
 from cache import *
@@ -347,6 +349,22 @@ def main():
                         else:
                             break
                     elif user_input == 4:
+                        count_input = question("How many posts? (0 = unlimited): ").strip()
+                        count = int(count_input)
+                        posted = 0
+                        info("Starting auto-post. Press Ctrl+C to stop.", False)
+                        try:
+                            while count == 0 or posted < count:
+                                twitter.post()
+                                posted += 1
+                                if count != 0 and posted >= count:
+                                    break
+                                wait_minutes = random.randint(4, 6)
+                                info(f" => Posted {posted}. Next post in {wait_minutes} minutes...", False)
+                                time.sleep(wait_minutes * 60)
+                        except KeyboardInterrupt:
+                            info(f" => Auto-post stopped. Total posted: {posted}", False)
+                    elif user_input == 5:
                         if get_verbose():
                             info(" => Climbing Options Ladder...", False)
                         break
